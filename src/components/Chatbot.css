@@ -1,0 +1,99 @@
+.chatbox {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  width: 350px;
+  max-height: 500px;
+  background: #ffffff;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  display: none;
+  flex-direction: column;
+  z-index: 999;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.chatbox.visible {
+  display: flex;
+}
+
+.chat-header {
+  background-color: #00b894;
+  color: white;
+  font-weight: bold;
+  padding: 12px;
+  font-size: 18px;
+  text-align: center;
+  border-radius: 12px 12px 0 0;
+}
+
+.chat-body {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  background: #f7f7f7;
+}
+
+.chat-input {
+  display: flex;
+  border-top: 1px solid #ddd;
+  background: #fff;
+  padding: 8px;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-input input {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.chat-input button {
+  border: none;
+  background: #00b894;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.chat-input button:hover {
+  background: #01946d;
+}
+
+.msg {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  max-width: 80%;
+  word-wrap: break-word;
+}
+
+.msg.user {
+  background: #dfe6e9;
+  align-self: flex-end;
+  text-align: right;
+}
+
+.msg.bot {
+  background: #e1f7f0;
+  align-self: flex-start;
+  text-align: left;
+}
+
+.chatbox button.checkout-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #00b894;
+  color: #fff;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}

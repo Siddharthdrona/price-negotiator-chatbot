@@ -1,0 +1,86 @@
+/* General */
+body {
+  background-color: #f9f9f9;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+h2 {
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+input[type="number"] {
+  width: 70px;
+}
+
+/* Card Styling */
+.card {
+  border: 1px solid #ddd;
+  border-radius: 16px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  transition: transform 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.card-img-top {
+  height: 180px;
+  object-fit: cover;
+  border-radius: 12px 12px 0 0;
+}
+
+/* Cart Item */
+.cart-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Cart image */
+.cart-item img {
+  border-radius: 8px;
+}
+
+/* Buttons */
+.btn-warning {
+  background-color: #f39c12;
+  border-color: #f39c12;
+}
+
+.btn-warning:hover {
+  background-color: #e67e22;
+  border-color: #e67e22;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+}
+
+/* Quantity Controls */
+.d-flex.align-items-center > button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  text-align: center;
+  font-size: 18px;
+}
+
+/* Chatbot container override if needed */
+.chatbot-container {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  z-index: 999;
+  width: 350px;
+  height: 450px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  overflow: hidden;
+}
