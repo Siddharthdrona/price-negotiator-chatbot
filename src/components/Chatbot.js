@@ -1,9 +1,8 @@
-// Chatbot.js
 import React, { useEffect, useState } from "react";
 import "./Chatbot.css";
 import CartCheckoutModal from "../components/CartCheckoutModal";
 
-function Chatbot({ visible, setVisible, product }) {
+function Chatbot({ visible = true, setVisible = () => {}, product }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [negotiationCount, setNegotiationCount] = useState(0);
@@ -32,9 +31,9 @@ function Chatbot({ visible, setVisible, product }) {
   }, [visible, product]);
 
   const calculatePrice = (originalPrice, count) => {
-    const maxDiscount = 25;
-    const perRound = 5;
-    const discount = Math.min(perRound * count, maxDiscount);
+    const maxDiscount = 15; // 15% max
+    let discount = 1 + (count - 1) * 0.5; // 1%, 1.5%, 2%, ...
+    discount = Math.min(discount, maxDiscount);
     return Math.round(originalPrice * (1 - discount / 100));
   };
 
@@ -42,33 +41,40 @@ function Chatbot({ visible, setVisible, product }) {
     const trimmed = input.trim();
     if (!trimmed) return;
 
+    speechSynthesis.cancel(); // Stop ongoing speech when sending
+
     const newMessages = [...messages, { from: "user", text: trimmed }];
     const lower = trimmed.toLowerCase();
-    let response = "Sorry, I didn’t understand that.";
+    let response = "Sorry, Not Negotiable.";
 
     const originalTotal = Number(product.price) * Number(product.quantity);
     let newPrice = finalPrice;
 
-    if (
-      lower.includes("aur") ||
-      lower.includes("kam") ||
-      lower.includes("bargain")
-    ) {
+    const bargainingWords = [
+      "nkka", "kam", "bargain", "thakkuva", "thagginchandi", "cheap",
+      "koncham thakkuva", "inkoka sari", "inka", "deal", "inkemaina",
+      "manchi rate", "thaggatam", "rate thakkuva", "konchem taggandi", "inka taggali"
+    ];
+
+    const matched = bargainingWords.some(word => lower.includes(word));
+
+    if (matched) {
       const newCount = negotiationCount + 1;
       newPrice = calculatePrice(originalTotal, newCount);
+      const discountValue = originalTotal - newPrice;
+
       response =
-        newCount * 5 >= 25
-          ? `Okay okay! This is my final offer 🙏 — ₹${newPrice}. Click below to add to cart.`
-          : `Hmm... ₹${
-              originalTotal - newPrice
-            } off okay! New price: ₹${newPrice}`;
+        (1 + (newCount - 1) * 0.5) >= 15
+          ? `Okay! This is my final offer — ₹${newPrice}. Click below to add to cart.`
+          : `Hmm... ₹${discountValue.toFixed(2)} off okay! New price: ₹${newPrice}`;
+
       setNegotiationCount(newCount);
     } else if (lower.includes("final price")) {
-      newPrice = calculatePrice(originalTotal, 5);
+      newPrice = calculatePrice(originalTotal, 30); // simulate 15% discount
       response = `Alright! Final price: ₹${newPrice}. You can add to cart now.`;
-      setNegotiationCount(5);
+      setNegotiationCount(30);
     } else if (lower.includes("discount")) {
-      response = `Sure, let's start the deal. Ask for more by saying "aur kam karo" `;
+      response = `Sure, let's start the deal. Ask for more by saying "inka thakkuva cheyyandi"`;
     }
 
     setMessages([...newMessages, { from: "bot", text: response }]);
@@ -78,6 +84,8 @@ function Chatbot({ visible, setVisible, product }) {
   };
 
   const handleVoiceInput = () => {
+    speechSynthesis.cancel(); // Stop voice when mic starts
+
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return alert("Voice input not supported.");
@@ -85,34 +93,29 @@ function Chatbot({ visible, setVisible, product }) {
     const recog = new SpeechRecognition();
     recog.lang = "en-IN";
     recog.start();
+
     recog.onresult = (e) => {
       const speech = e.results[0][0].transcript;
       setInput(speech);
       setTimeout(() => handleSend(), 300);
     };
+
+    recog.onerror = (err) => {
+      console.error("Voice input error:", err);
+    };
   };
+
   const addToCart = () => {
     const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-
-    // Check if product already exists
-    const existing = cart.find(
-      (item) => item.product_id === product.product_id
-    );
-    if (existing) {
-      existing.quantity += Number(product.quantity);
-      existing.price = Number(finalPrice) / Number(product.quantity); // update price per unit
-    } else {
-      cart.push({
-        product_id: product.product_id,
-        name: product.name,
-        image_url: product.image_url,
-        quantity: Number(product.quantity),
-        price: Number(finalPrice) / Number(product.quantity),
-        category: product.category,
-        description: product.description,
-      });
-    }
-
+    const newItem = {
+      product_id: product.product_id,
+      name: product.name,
+      image_url: product.image_url,
+      quantity: Number(product.quantity),
+      price: product.price,
+      finalPrice: Number(finalPrice),
+    };
+    cart.push(newItem);
     localStorage.setItem("cart", JSON.stringify(cart));
     setCartAdded(true);
     setShowModal(true);
@@ -122,20 +125,23 @@ function Chatbot({ visible, setVisible, product }) {
   return (
     <div className={`chatbox ${visible ? "visible" : ""}`}>
       <div className="chat-header">Negotiator Bot</div>
+
       <div className="chat-body">
         {messages.map((msg, i) => (
-          <div key={i} className={`msg ${msg.from}`}>
-            {msg.text}
-          </div>
+          <div key={i} className={`msg ${msg.from}`}>{msg.text}</div>
         ))}
       </div>
+
       <div className="chat-input">
         <button onClick={handleVoiceInput}>🎤</button>
         <input
           type="text"
           placeholder="Type here..."
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            speechSynthesis.cancel(); // Stop speech when typing
+            setInput(e.target.value);
+          }}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
         />
         <button onClick={handleSend}>Send</button>
@@ -145,13 +151,14 @@ function Chatbot({ visible, setVisible, product }) {
       {negotiationCount >= 5 && !cartAdded && (
         <div style={{ padding: "10px", textAlign: "center" }}>
           <button
-            onClick={addToCart} 
+            onClick={addToCart}
             style={{
               padding: "8px 12px",
               background: "#00b894",
               color: "#fff",
               borderRadius: "5px",
-            }}>
+            }}
+          >
             🛒 Add to Cart at ₹{finalPrice}
           </button>
         </div>
@@ -163,10 +170,19 @@ function Chatbot({ visible, setVisible, product }) {
         </div>
       )}
 
-      <CartCheckoutModal
-        visible={showModal}
-        onClose={() => setShowModal(false)}
-      />
+      <div
+        className="checkout-grid"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))",
+          gap: "20px",
+        }}
+      >
+        <CartCheckoutModal
+          visible={showModal}
+          onClose={() => setShowModal(false)}
+        />
+      </div>
 
       <button className="checkout-btn" onClick={() => setShowModal(true)}>
         Checkout

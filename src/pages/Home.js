@@ -1,20 +1,21 @@
 // Home.js
-import React, { useEffect, useState } from 'react';
-import { jsPDF } from 'jspdf';
-import './Home.css';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import Chatbot from '../components/Chatbot';
+import React, { useEffect, useState } from "react";
+import { jsPDF } from "jspdf";
+import "./Home.css";
+import "bootstrap/dist/css/bootstrap.min.css";
+import { useNavigate } from "react-router-dom";
 
 function Home() {
   const [products, setProducts] = useState([]);
-  const [cart, setCart] = useState(JSON.parse(localStorage.getItem('cart')) || []);
+  const [cart, setCart] = useState(
+    JSON.parse(localStorage.getItem("cart")) || []
+  );
   const [filteredProducts, setFilteredProducts] = useState([]);
-  const [chatVisible, setChatVisible] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('https://api.npoint.io/91c48db9bb00466a5574')
+    fetch("https://api.npoint.io/58b64ff0a3e614d16095")
       .then((res) => res.json())
       .then((data) => {
         setProducts(data);
@@ -23,7 +24,7 @@ function Home() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cart));
+    localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
 
   const addToCart = (product) => {
@@ -45,7 +46,9 @@ function Home() {
     setCart((prevCart) =>
       prevCart
         .map((item) =>
-          item.product_id === id ? { ...item, quantity: item.quantity + delta } : item
+          item.product_id === id
+            ? { ...item, quantity: item.quantity + delta }
+            : item
         )
         .filter((item) => item.quantity > 0)
     );
@@ -55,29 +58,40 @@ function Home() {
     setCart(cart.filter((item) => item.product_id !== id));
   };
 
-  const handleCheckout = () => {
-    if (cart.length === 0) return alert('Your cart is empty!');
+  const handleNegotiate = (product) => {
+    const fullProduct = { ...product, quantity: parseInt(quantity) };
+    const stateString = encodeURIComponent(JSON.stringify(fullProduct));
+    window.open(`/negotiate?data=${stateString}`, "_blank");
+  };
 
-    const userName = prompt('Enter your name:', 'Nandini');
-    const userLocation = prompt('Enter delivery location:', 'Nizamabad');
+  const handleCheckout = () => {
+    if (cart.length === 0) return alert("Your cart is empty!");
+
+    const userName = prompt("Enter your name:", "Nandini");
+    const userLocation = prompt("Enter delivery location:", "Nizamabad");
     if (!userName || !userLocation) return;
 
     const estimatedTime = Math.floor(Math.random() * 31) + 30;
-    const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const total = cart.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
 
     const doc = new jsPDF();
-    doc.setFont('helvetica', 'bold');
-    doc.text('Order Receipt', 20, 20);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont("helvetica", "bold");
+    doc.text("Order Receipt", 20, 20);
+    doc.setFont("helvetica", "normal");
     doc.text(`Customer Name: ${userName}`, 20, 30);
     doc.text(`Delivery Location: ${userLocation}`, 20, 40);
     doc.text(`Estimated Delivery Time: ${estimatedTime} minutes`, 20, 50);
-    doc.text('Order Summary:', 20, 60);
+    doc.text("Order Summary:", 20, 60);
 
     let y = 70;
     cart.forEach((item) => {
       doc.text(
-        `${item.name} x${item.quantity} - ₹${(item.price * item.quantity).toFixed(2)}`,
+        `${item.name} x${item.quantity} - ₹${(
+          item.price * item.quantity
+        ).toFixed(2)}`,
         20,
         y
       );
@@ -85,29 +99,35 @@ function Home() {
     });
 
     doc.text(`Total Amount: ₹${total.toFixed(2)}`, 20, y + 10);
-    doc.save(`Order_Receipt_${userName.replace(/\s+/g, '_')}.pdf`);
+    doc.save(`Order_Receipt_${userName.replace(/\s+/g, "_")}.pdf`);
 
-    alert('Thank you for your purchase! Your receipt has been downloaded.');
+    alert("Thank you for your purchase! Your receipt has been downloaded.");
     setCart([]);
+  };
+
+  const handleSignOut = () => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("cart");
+    navigate("/login");
   };
 
   const filterCategory = (category) => {
     setFilteredProducts(
-      category === 'All' ? products : products.filter((p) => p.category === category)
+      category === "All"
+        ? products
+        : products.filter((p) => p.category === category)
     );
-  };
-
-  const handleNegotiate = (product) => {
-    setSelectedProduct({ ...product, quantity: parseInt(quantity) });
-    setChatVisible(true);
   };
 
   return (
     <div className="container py-4">
-      <h2 className="text-center mb-4">🛒 Nandini E-Com Shop</h2>
+      <h2 className="text-center mb-4">🛒 Nandini E-Com Shop
+      </h2>
 
       <div className="mb-3 d-flex justify-content-between">
-        <select className="form-select w-auto" onChange={(e) => filterCategory(e.target.value)}>
+        <select
+          className="form-select w-auto"
+          onChange={(e) => filterCategory(e.target.value)}>
           <option>All</option>
           <option>Electronics</option>
           <option>Food</option>
@@ -115,11 +135,16 @@ function Home() {
           <option>Laptops</option>
           <option>Clothing</option>
           <option>Accessories</option>
+          <option>Western Dress</option>
+          <option>Beauty Products</option>
+          <option>Shoes</option>
         </select>
         <button className="btn btn-success" onClick={handleCheckout}>
           Checkout ({cart.reduce((sum, item) => sum + item.quantity, 0)} items)
         </button>
-        
+        <button className="btn btn-success" onClick={handleSignOut}>
+          Sign Out
+        </button>
       </div>
 
       <div className="row">
@@ -130,7 +155,7 @@ function Home() {
                 src={product.image_url}
                 className="card-img-top"
                 alt={product.name}
-                onError={(e) => (e.target.src = 'fallback.jpg')}
+                onError={(e) => (e.target.src = "fallback.jpg")}
               />
               <div className="card-body d-flex flex-column">
                 <h5 className="card-title">{product.name}</h5>
@@ -146,20 +171,48 @@ function Home() {
                   onChange={(e) => setQuantity(e.target.value)}
                 />
                 <div className="d-flex gap-2">
-                  <button className="btn btn-primary" onClick={() => addToCart(product)}>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => addToCart(product)}>
                     Add to Cart
                   </button>
-                  <button className="btn btn-warning" onClick={() => handleNegotiate(product)}>
+                  <button
+                    className="btn btn-warning"
+                    onClick={() => handleNegotiate(product)}>
                     Negotiate
                   </button>
                 </div>
+                {(() => {
+                  const reviewData = JSON.parse(
+                    localStorage.getItem("userReview")
+                  );
+                  if (
+                    reviewData &&
+                    reviewData.product_id === product.product_id
+                  ) {
+                    return (
+                      <div className="mt-2">
+                        <p style={{ margin: 0 }}>
+                          <strong>{reviewData.name}</strong> rated it {" "}
+                          {reviewData.rating}/5 ⭐
+                        </p>
+                        <blockquote style={{ fontSize: "smaller", color: "#555" }}>
+                          "{reviewData.review}"
+                        </blockquote>
+                      </div>
+                    );
+                  } else {
+                    return <p className="text-muted">No reviews yet</p>;
+                  }
+                })()}
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      <h4 className="mt-5">🛍️ Your Cart</h4>
+      <h4 className="mt-5">🛍️ Your Cart
+      </h4>
       {cart.length === 0 ? (
         <p>Your cart is empty.</p>
       ) : (
@@ -168,8 +221,8 @@ function Home() {
             <img
               src={item.image_url}
               alt={item.name}
-              width={60}
-              height={60}
+              width={200}
+              height={200}
               className="me-3 rounded"
             />
             <div className="flex-grow-1">
@@ -177,38 +230,30 @@ function Home() {
               <div className="d-flex align-items-center">
                 <button
                   className="btn btn-sm btn-outline-secondary me-2"
-                  onClick={() => updateQuantity(item.product_id, -1)}
-                >
+                  onClick={() => updateQuantity(item.product_id, -1)}>
                   -
                 </button>
                 {item.quantity}
                 <button
                   className="btn btn-sm btn-outline-secondary ms-2"
-                  onClick={() => updateQuantity(item.product_id, 1)}
-                >
+                  onClick={() => updateQuantity(item.product_id, 1)}>
                   +
                 </button>
               </div>
             </div>
-            <div className="ms-3">₹{(item.price * item.quantity).toFixed(2)}</div>
+            <div className="ms-3">
+              ₹{(item.price * item.quantity).toFixed(2)}
+            </div>
             <button
               className="btn btn-sm btn-danger ms-3"
-              onClick={() => removeFromCart(item.product_id)}
-            >
+              onClick={() => removeFromCart(item.product_id)}>
               🗑️
             </button>
           </div>
         ))
       )}
-
-      <Chatbot
-        visible={chatVisible}
-        setVisible={setChatVisible}
-        product={selectedProduct}
-      />
     </div>
   );
 }
 
 export default Home;
-// This code is the main page of the e-commerce application, which displays products, allows users to add items to their cart, and provides a chatbot for negotiating prices. It also includes functionality for filtering products by category and checking out with a generated receipt.

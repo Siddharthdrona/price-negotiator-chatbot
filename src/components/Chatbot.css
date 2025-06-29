@@ -1,13 +1,13 @@
 .chatbox {
-  position: fixed;
-  bottom: 80px;
-  right: 20px;
-  width: 350px;
-  max-height: 500px;
+  position: relative;
+  margin: auto;
+  width: 100%;
+  max-width: 500px;
+  height: auto;
   background: #ffffff;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
   border-radius: 12px;
-  display: none;
+  display: flex;
   flex-direction: column;
   z-index: 999;
   overflow: hidden;
@@ -33,6 +33,7 @@
   padding: 10px;
   overflow-y: auto;
   background: #f7f7f7;
+  max-height: 300px;
 }
 
 .chat-input {
@@ -95,5 +96,5 @@
   padding: 10px 15px;
   border-radius: 6px;
   cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }

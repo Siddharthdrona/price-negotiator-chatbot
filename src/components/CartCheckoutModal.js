@@ -1,80 +1,188 @@
 // CartCheckoutModal.js
-import React, { useState, useRef } from 'react';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-import './CartCheckoutModal.css';
+import React, { useState } from "react";
+import "./CartCheckoutModal.css";
 
 function CartCheckoutModal({ visible, onClose }) {
+  const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
+  const [phone, setPhone] = useState("");
+  const [paymentMode, setPaymentMode] = useState("cod");
+  const [upiId, setUpiId] = useState("");
+
   const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  const [form, setForm] = useState({ name: '', phone: '', address: '' });
-  const [submitted, setSubmitted] = useState(false);
-  const billRef = useRef();
-  const total = cart.reduce((sum, item) => sum + item.finalPrice, 0);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const total = cart.reduce((sum, item) => {
+    const price = Number(item.finalPrice);
+    const qty = Number(item.quantity);
+    return !isNaN(price) && !isNaN(qty) ? sum + price * qty : sum;
+  }, 0);
 
-  const handleSubmit = () => {
-    if (!form.name || !form.phone || !form.address) return alert("Please fill all fields");
-    setSubmitted(true);
-  };
+  const totalMRP = cart.reduce((sum, item) => {
+    const mrp = Number(item.originalPrice || item.price);
+    const qty = Number(item.quantity);
+    return !isNaN(mrp) && !isNaN(qty) ? sum + mrp * qty : sum;
+  }, 0);
 
-  const downloadPDF = () => {
-    html2canvas(billRef.current).then(canvas => {
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF();
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save("bill.pdf");
-    });
+  const totalSaved = totalMRP - total;
+
+  const handleCheckout = () => {
+    const now = new Date();
+    const formattedDate = now.toLocaleString();
+
+    const billDetails = `
+🧾 E-Commerce Bill
+Date: ${formattedDate}
+
+Customer Name: ${name}
+Address: ${address}
+Phone: ${phone}
+Payment Mode: ${paymentMode === "upi" ? `UPI (${upiId})` : "Cash on Delivery"}
+
+-------------------------------
+Items:
+${cart
+  .map(
+    (item) =>
+      `• ${item.name} × ${item.quantity} = ₹${
+        Number(item.finalPrice) * Number(item.quantity) || 0
+      }`
+  )
+  .join("\n")}
+
+-------------------------------
+Total MRP: ₹${totalMRP}
+Total Savings: ₹${totalSaved}
+Total Payable: ₹${total}
+
+Thank you for shopping with us!
+`;
+
+    const blob = new Blob([billDetails], { type: "text/plain" });
+    const link = document.createElement("a");
+    link.download = `bill_${now.getTime()}.txt`;
+    link.href = URL.createObjectURL(blob);
+    link.click();
+
+    setTimeout(() => window.print(), 500);
+    localStorage.removeItem("cart");
+    onClose();
   };
 
   if (!visible) return null;
 
   return (
-    <div className="modal-overlay">
-      <div className="modal">
-        <button onClick={onClose} className="close-btn">✖</button>
+    <div className="modal-backdrop">
+      <div className="modal-content">
+        <h2>Checkout</h2>
+        <input
+          type="text"
+          placeholder="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <input
+          type="tel"
+          placeholder="Phone Number"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Address"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+        />
 
-        {!submitted ? (
-          <>
-            <h3>Enter your details</h3>
-            <input name="name" placeholder="Name" onChange={handleChange} />
-            <input name="phone" placeholder="Phone" onChange={handleChange} />
-            <textarea name="address" placeholder="Address" onChange={handleChange} />
-            <button onClick={handleSubmit} className="submit-btn">Generate Bill</button>
-          </>
-        ) : (
-          <>
-            <div ref={billRef}>
-              <h3>🧾 Final Bill</h3>
-              <p><strong>Name:</strong> {form.name}</p>
-              <p><strong>Phone:</strong> {form.phone}</p>
-              <p><strong>Address:</strong> {form.address}</p>
-              <hr />
-              <table className="bill-table">
-                <thead>
-                  <tr><th>Item</th><th>Qty</th><th>Price</th></tr>
-                </thead>
-                <tbody>
-                  {cart.map((item, i) => (
-                    <tr key={i}>
-                      <td>{item.name}</td>
-                      <td>{item.quantity}</td>
-                      <td>₹{item.finalPrice}</td>
-                    </tr>
-                  ))}
-                  <tr><td colSpan="2"><strong>Total</strong></td><td><strong>₹{total}</strong></td></tr>
-                </tbody>
-              </table>
+        <div style={{ marginTop: "10px" }}>
+          <strong>Choose Payment Method:</strong>
+          <div>
+            <label>
+              <input
+                type="radio"
+                name="payment"
+                value="cod"
+                checked={paymentMode === "cod"}
+                onChange={() => setPaymentMode("cod")}
+              />{" "}
+              Cash on Delivery
+            </label>
+          </div>
+          <div>
+            <label>
+              <input
+                type="radio"
+                name="payment"
+                value="upi"
+                checked={paymentMode === "upi"}
+                onChange={() => setPaymentMode("upi")}
+              />{" "}
+              UPI
+            </label>
+            {paymentMode === "upi" && (
+              <input
+                type="text"
+                placeholder="Enter UPI ID"
+                value={upiId}
+                onChange={(e) => setUpiId(e.target.value)}
+              />
+            )}
+          </div>
+        </div>
+        <div className="cart-items">
+          <div className="bill-summary">
+            <h3>🧾 Bill Summary</h3>
+            <div className="summary-grid">
+              <div>
+                <strong>Item</strong>
+              </div>
+              <div>
+                <strong>Qty</strong>
+              </div>
+              <div>
+                <strong>Price</strong>
+              </div>
+              <div>
+                <strong>Total</strong>
+              </div>
+              {cart.map((item, index) => {
+                const itemTotal =
+                  Number(item.finalPrice) * Number(item.quantity);
+                return (
+                  <React.Fragment key={index}>
+                    <div>{item.name}</div>
+                    <div>{item.quantity}</div>
+                    <div>₹{item.finalPrice}</div>
+                    <div>₹{itemTotal}</div>
+                  </React.Fragment>
+                );
+              })}
             </div>
-            <button onClick={downloadPDF} className="submit-btn">📄 Download PDF</button>
-            <p>✅ Thank you for your purchase!</p>
-          </>
-        )}
+            <div className="total-line">
+              <strong>Total:</strong> ₹{total}
+            </div>
+            <div className="total-line saving">
+              You saved ₹
+              {cart.reduce(
+                (sum, item) =>
+                  sum +
+                  (Number(item.price) - Number(item.finalPrice)) *
+                    Number(item.quantity),
+                0
+              )}{" "}
+              on MRP!
+            </div>
+          </div>
+          <div className="checkout-buttons">
+            <button onClick={handleCheckout} id="btn">
+              Download & Print Bill
+            </button>
+            <button onClick={onClose} className="cancel-button">
+              <span role="img" aria-label="cross">
+                ❌
+              </span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
